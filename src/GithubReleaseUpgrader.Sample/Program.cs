@@ -11,7 +11,7 @@ namespace GithubReleaseUpgrader.Sample
         {
             public override string UpgradeTempFolder { get; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GithubReleaseUpgrader");
 
-            public override string GithubUrl { get; } = "https://github.com/jim-jiang-github/LogVisualizer";
+            public override string GithubUrl { get; } = "https://github.com/jim-jiang-github/GithubReleaseUpgrader";
 
             public override string UpgradeResourceName { get; } = "windows-x64.zip";
 

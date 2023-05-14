@@ -100,7 +100,7 @@ namespace GithubReleaseUpgrader
                     Arguments = $"{_readyToUpgrade.UpgradeScriptPath} {_readyToUpgrade.OriginalFolder} {_readyToUpgrade.TargetFolder} {executablePath}",
                     RedirectStandardOutput = false,
                     RedirectStandardError = false,
-                    UseShellExecute = false,
+                    UseShellExecute = true,
                     CreateNoWindow = true
                 }
             };
