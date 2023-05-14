@@ -1,0 +1,65 @@
+name: Build Windows
+# https://github.com/actions/virtual-environments
+
+on:
+  push:
+    tags:
+      - 'v\d+\.?\d+\.?\d+\.?'
+  workflow_dispatch:
+env:
+    DOTNETVERSION: 6.0.x
+jobs:
+  build-mac:
+    runs-on: windows-latest
+    env:
+      build_path: src\GithubReleaseUpgrader.Sample\bin\Release\net6.0-windows\win-x64\publish
+      zip_name_without_framework: upgrader-without-framework.zip
+    name: Windows Build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        uses: damienaicheh/extract-version-from-tag-action@v1.1.0
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{env.DOTNETVERSION}}
+          include-prerelease: true
+
+      - name: Install 7Zip PowerShell Module
+        shell: powershell
+        run: Install-Module 7Zip4PowerShell -Force -Verbose
+
+      - name: Remove File
+        uses: JesseTG/rm@v1.0.3
+        with:
+          path: ${{ env.build_path }}
+
+      - name: Restore Dependencies
+        run: dotnet restore src/GithubReleaseUpgrader.Sample/GithubReleaseUpgrader.Sample.csproj
+
+      - name: Build App without framework
+        run: dotnet publish src/GithubReleaseUpgrader.Sample/GithubReleaseUpgrader.Sample.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:Version='${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}.${{ env.NUMBER_OF_COMMITS }}'
+      
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2.3.1
+        with:
+          name: windows-ci-build
+          path: ${{ env.build_path }}
+        
+      - name: Zip the artifacts
+        shell: powershell
+        run: Compress-7Zip ${{ env.build_path }} -ArchiveFileName ${{ env.zip_name_without_framework }} -Format Zip
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          draft: false
+          title: Release ${{ github.ref_name }}
+          files: |
+            ./${{ env.zip_name_without_framework }}
