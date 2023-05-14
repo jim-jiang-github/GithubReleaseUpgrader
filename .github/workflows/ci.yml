@@ -14,6 +14,7 @@ jobs:
     env:
       build_path: src\GithubReleaseUpgrader.Sample\bin\Release\net6.0-windows\win-x64\publish
       zip_name_without_framework: upgrader-without-framework.zip
+      UPGRADE_INFO_PATH: upgradeInfo.json
     name: Windows Build
     steps:
       - name: Checkout
@@ -43,7 +44,7 @@ jobs:
         run: dotnet restore src/GithubReleaseUpgrader.Sample/GithubReleaseUpgrader.Sample.csproj
 
       - name: Build App without framework
-        run: dotnet publish src/GithubReleaseUpgrader.Sample/GithubReleaseUpgrader.Sample.csproj -c Release -r win-x64 --self-contained false /p:PublishSingleFile=true /p:Version='${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}.${{ env.NUMBER_OF_COMMITS }}'
+        run: dotnet publish src/GithubReleaseUpgrader.Sample/GithubReleaseUpgrader.Sample.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:Version='${{ env.MAJOR }}.${{ env.MINOR }}.${{ env.PATCH }}.${{ env.NUMBER_OF_COMMITS }}'
       
       - name: Upload Artifact
         uses: actions/upload-artifact@v2.3.1
@@ -55,11 +56,18 @@ jobs:
         shell: powershell
         run: Compress-7Zip ${{ env.build_path }} -ArchiveFileName ${{ env.zip_name_without_framework }} -Format Zip
 
+      - name: Collect upgradeInfo artifacts
+        uses: actions/upload-artifact@v2.3.1
+        with:
+          name: upgradeInfo
+          path: ${{ env.UPGRADE_INFO_PATH }}
+          
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          repo_token: "${{ secrets.TOKEN }}"
           prerelease: false
           draft: false
           title: Release ${{ github.ref_name }}
           files: |
-            ./${{ env.zip_name_without_framework }}
+            ./windows-x64.zip
+            ./upgradeInfo.json
