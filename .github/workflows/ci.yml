@@ -54,7 +54,7 @@ jobs:
         
       - name: Zip the artifacts
         shell: powershell
-        run: Compress-7Zip ${{ env.build_path }} -ArchiveFileName ${{ env.zip_name_without_framework }} -Format Zip
+        run: Compress-7Zip ${{ env.build_path }} -ArchiveFileName windows-x64.zip -Format Zip
 
       - name: Collect upgradeInfo artifacts
         uses: actions/upload-artifact@v2.3.1
