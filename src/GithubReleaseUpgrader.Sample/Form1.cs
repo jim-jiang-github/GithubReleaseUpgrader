@@ -16,7 +16,7 @@ namespace GithubReleaseUpgrader.Sample
             _synchronizationContext.Send((c) =>
             {
                 textBox1.Text = log;
-            },this);
+            }, this);
         }
     }
 }

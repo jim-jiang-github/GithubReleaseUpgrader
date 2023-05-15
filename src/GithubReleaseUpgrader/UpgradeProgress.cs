@@ -18,7 +18,7 @@ namespace GithubReleaseUpgrader
             ConfirmDownload
         }
 
-        private const string UPGRADE_SCRIPT_NAME = "upgrade.sh";
+        private const string UPGRADE_SCRIPT_NAME = "upgrade.bat";
         private string UpgradeScriptPath => Path.Combine(UpgradeTempFolder, UPGRADE_SCRIPT_NAME);
         private string UpgradeResourceFolder => Path.Combine(UpgradeTempFolder, "upgrades");
         internal string GithubLastReleaseUrl => $"{GithubUrl}/releases/latest";
@@ -66,7 +66,7 @@ namespace GithubReleaseUpgrader
         }
         internal async Task<ReadyToUpgrade?> SilentInternal(Version currentVersion, Version newtVersion)
         {
-            var readyToUpgrade = await PrepareForUpgrade();
+            var readyToUpgrade = await PrepareForUpgrade(false);
             return readyToUpgrade;
         }
 
@@ -91,18 +91,13 @@ namespace GithubReleaseUpgrader
             return readyToUpgrade;
         }
 
-        internal void CleanUpgradeTempFolder() 
-        {
-            FileOperationsHelper.SafeClearDirectory(UpgradeTempFolder);
-        }
-
         private string? GetUpgradeScriptContent()
         {
             Assembly assembly = Assembly.GetExecutingAssembly();
-            using Stream? stream = assembly.GetManifestResourceStream("GithubReleaseUpgrader.upgrader.sh");
+            using Stream? stream = assembly.GetManifestResourceStream($"GithubReleaseUpgrader.upgrader.bat");
             if (stream == null)
             {
-                Log.Warning("Can not found upgrader.sh");
+                Log.Warning("Can not found upgrader");
                 return null;
             }
             using StreamReader reader = new StreamReader(stream);
@@ -110,7 +105,7 @@ namespace GithubReleaseUpgrader
             return content;
         }
 
-        private async Task<ReadyToUpgrade?> PrepareForUpgrade()
+        private async Task<ReadyToUpgrade?> PrepareForUpgrade(bool needRestart = true)
         {
             var scriptContent = GetUpgradeScriptContent();
             if (scriptContent == null)
@@ -124,7 +119,8 @@ namespace GithubReleaseUpgrader
             {
                 UpgradeScriptPath = UpgradeScriptPath,
                 OriginalFolder = UpgradeResourceFolder,
-                TargetFolder = ExecutableFolder
+                TargetFolder = ExecutableFolder,
+                NeedRestart = needRestart
             };
             FileOperationsHelper.SafeCreateFile(UpgradeScriptPath, scriptContent);
             return readyToUpgrade;

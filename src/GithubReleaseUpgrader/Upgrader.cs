@@ -25,7 +25,6 @@ namespace GithubReleaseUpgrader
                 Log.Information("Start _readyToUpgrade:{_readyToUpgrade} is not null", upgradeProgress);
                 return true;
             }
-            upgradeProgress.CleanUpgradeTempFolder();
             Task.Run(async () =>
             {
                 try
@@ -96,11 +95,11 @@ namespace GithubReleaseUpgrader
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = "bash",
-                    Arguments = $"{_readyToUpgrade.UpgradeScriptPath} {_readyToUpgrade.OriginalFolder} {_readyToUpgrade.TargetFolder} {executablePath}",
+                    FileName = _readyToUpgrade.UpgradeScriptPath,
+                    Arguments = $"{_readyToUpgrade.OriginalFolder} {_readyToUpgrade.TargetFolder} {executablePath} {_readyToUpgrade.NeedRestart}",
                     RedirectStandardOutput = false,
                     RedirectStandardError = false,
-                    UseShellExecute = true,
+                    UseShellExecute = false,
                     CreateNoWindow = true
                 }
             };
