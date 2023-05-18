@@ -23,7 +23,7 @@ rd /S /Q "%originalFolder%"
 if "%needRestart%"=="True" (
     echo "ready for start"
     start "" "%executablePath%"
-    timeout /T 5 > nul
+    timeout /T 1 > nul
 ) else (
     echo "No restart needed"
 )

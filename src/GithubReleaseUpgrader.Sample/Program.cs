@@ -19,27 +19,34 @@ namespace GithubReleaseUpgrader.Sample
 
             public override string ExecutableName { get; } = "GithubReleaseUpgrader.Sample.exe";
 
-            public override void Force(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)
+            public override Task Force(Version currentVersion, Version newtVersion, string? releaseLogMarkDown, ForceUpgradeHandle forceUpgradeHandle)
             {
+                return Task.CompletedTask;
             }
 
-            public override UpgradeOption Notify(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)
+            public override Task Notify(Version currentVersion, Version newtVersion, string? releaseLogMarkDown, NotifyUpgradeHandle notifyUpgradeHandle)
             {
                 Log.Information("Notify old version is:{currentVersion}, new version is:{newtVersion}", currentVersion, newtVersion);
                 Log.Information("Enter upgrade mode: c:Cancel/r:RemindAfter30Minutes/i:IgnoreCurrentVersion/d:ConfirmDownload");
                 var key = Console.ReadKey();
                 switch (key.Key)
                 {
-                    case ConsoleKey.C:
-                    default:
-                        return UpgradeOption.Cancel;
                     case ConsoleKey.I:
-                        return UpgradeOption.IgnoreCurrentVersion;
+                    default:
+                        notifyUpgradeHandle.Ignore = true;
+                        return Task.CompletedTask;
                     case ConsoleKey.R:
-                        return UpgradeOption.RemindAfter30Minutes;
+                        notifyUpgradeHandle.NeedRestart = true;
+                        return Task.CompletedTask;
                     case ConsoleKey.D:
-                        return UpgradeOption.ConfirmDownload;
+                        notifyUpgradeHandle.UpgradeNow = true;
+                        return Task.CompletedTask;
                 }
+            }
+
+            public override void Shutdown()
+            {
+                throw new NotImplementedException();
             }
 
             public override void Tip(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)

@@ -5,16 +5,22 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using static GithubReleaseUpgrader.UpgradeProgress;
 
 namespace GithubReleaseUpgrader
 {
     public abstract class UpgradeProgress
     {
-        public enum UpgradeOption
+        public class ForceUpgradeHandle
         {
-            Cancel,
-            IgnoreCurrentVersion,
-            ConfirmDownload
+            public bool NeedRestart { get; set; } = true;
+            public bool UpgradeNow { get; set; } = true;
+        }
+        public class NotifyUpgradeHandle
+        {
+            public bool NeedRestart { get; set; } = true;
+            public bool UpgradeNow { get; set; } = true;
+            public bool Ignore { get; set; } = true;
         }
 
         private const string UPGRADE_SCRIPT_NAME = "upgrade.bat";
@@ -33,8 +39,9 @@ namespace GithubReleaseUpgrader
         public abstract string ExecutableName { get; }
 
         public abstract void Tip(Version currentVersion, Version newtVersion, string? releaseLogMarkDown);
-        public abstract UpgradeOption Notify(Version currentVersion, Version newtVersion, string? releaseLogMarkDown);
-        public abstract void Force(Version currentVersion, Version newtVersion, string? releaseLogMarkDown);
+        public abstract Task Notify(Version currentVersion, Version newtVersion, string? releaseLogMarkDown, NotifyUpgradeHandle notifyUpgradeHandle);
+        public abstract Task Force(Version currentVersion, Version newtVersion, string? releaseLogMarkDown, ForceUpgradeHandle forceUpgradeHandle);
+        public abstract void Shutdown();
 
         internal void TipInternal(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)
         {
@@ -42,28 +49,45 @@ namespace GithubReleaseUpgrader
         }
         internal async Task<ReadyToUpgrade?> NotifyInternal(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)
         {
-            var upgradeOption = Notify(currentVersion, newtVersion, releaseLogMarkDown);
-            switch (upgradeOption)
+            NotifyUpgradeHandle notifyUpgradeHandle = new NotifyUpgradeHandle();
+            await Notify(currentVersion, newtVersion, releaseLogMarkDown, notifyUpgradeHandle);
+            if (notifyUpgradeHandle.Ignore)
             {
-                case UpgradeOption.Cancel:
-                default:
+                var readyToUpgrade = PrepareForUpgrade(false, false);
+                SaveIgnoreVersion(newtVersion);
+                return readyToUpgrade;
+            }
+            else
+            {
+                var result = await PrepareForDownload();
+                if (!result)
+                {
                     return null;
-                case UpgradeOption.IgnoreCurrentVersion:
-                    return null;
-                case UpgradeOption.ConfirmDownload:
-                    var readyToUpgrade = await PrepareForUpgrade();
-                    return readyToUpgrade;
+                }
+                var readyToUpgrade = PrepareForUpgrade(notifyUpgradeHandle.NeedRestart, notifyUpgradeHandle.UpgradeNow);
+                return readyToUpgrade;
             }
         }
         internal async Task<ReadyToUpgrade?> ForceInternal(Version currentVersion, Version newtVersion, string? releaseLogMarkDown)
         {
-            Force(currentVersion, newtVersion, releaseLogMarkDown);
-            var readyToUpgrade = await PrepareForUpgrade();
+            var result = await PrepareForDownload();
+            if (!result)
+            {
+                return null;
+            }
+            ForceUpgradeHandle forceUpgradeHandle = new ForceUpgradeHandle();
+            await Force(currentVersion, newtVersion, releaseLogMarkDown, forceUpgradeHandle);
+            var readyToUpgrade = PrepareForUpgrade(forceUpgradeHandle.NeedRestart, forceUpgradeHandle.UpgradeNow);
             return readyToUpgrade;
         }
         internal async Task<ReadyToUpgrade?> SilentInternal(Version currentVersion, Version newtVersion)
         {
-            var readyToUpgrade = await PrepareForUpgrade(false);
+            var result = await PrepareForDownload();
+            if (!result)
+            {
+                return null;
+            }
+            var readyToUpgrade = PrepareForUpgrade(false, false);
             return readyToUpgrade;
         }
 
@@ -102,25 +126,47 @@ namespace GithubReleaseUpgrader
             return content;
         }
 
-        private async Task<ReadyToUpgrade?> PrepareForUpgrade(bool needRestart = true)
+        private async Task<bool> PrepareForDownload()
         {
             var scriptContent = GetUpgradeScriptContent();
             if (scriptContent == null)
             {
-                return null;
+                return false;
             }
             FileOperationsHelper.SafeClearDirectory(UpgradeResourceFolder);
             var downloadFileSavePath = Path.Combine(UpgradeResourceFolder, UpgradeResourceName);
-            await Downloader.StartDonwload(UpgradeResourceUrl, downloadFileSavePath, true);
+            var result = await Downloader.StartDonwload(UpgradeResourceUrl, downloadFileSavePath, true);
+            FileOperationsHelper.SafeCreateFile(UpgradeScriptPath, scriptContent);
+            return result;
+        }
+
+        private ReadyToUpgrade PrepareForUpgrade(bool needRestart = true, bool needShutdown = true)
+        {
             ReadyToUpgrade readyToUpgrade = new ReadyToUpgrade()
             {
                 UpgradeScriptPath = UpgradeScriptPath,
                 OriginalFolder = UpgradeResourceFolder,
                 TargetFolder = ExecutableFolder,
-                NeedRestart = needRestart
+                NeedRestart = needRestart,
+                NeedShutdown = needShutdown
             };
-            FileOperationsHelper.SafeCreateFile(UpgradeScriptPath, scriptContent);
             return readyToUpgrade;
+        }
+
+        internal IgnoreVersion? GetIgnoreVersion()
+        {
+            var readyToUpgrade = IgnoreVersion.LoadFromJson(UpgradeTempFolder);
+            return readyToUpgrade;
+        }
+
+        private void SaveIgnoreVersion(Version version)
+        {
+            IgnoreVersion ignoreVersion = new IgnoreVersion()
+            {
+                Version = version
+            };
+            FileOperationsHelper.SafeCreateDirectory(UpgradeTempFolder);
+            ignoreVersion.SaveAsJson(UpgradeTempFolder);
         }
 
         public override string ToString()

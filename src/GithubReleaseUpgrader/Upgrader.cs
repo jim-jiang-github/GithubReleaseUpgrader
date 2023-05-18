@@ -15,8 +15,9 @@ namespace GithubReleaseUpgrader
     public class Upgrader
     {
         private static ReadyToUpgrade? _readyToUpgrade;
+        private static IgnoreVersion? _ignoreVersion;
 
-        public static bool CheckForUpgrade(UpgradeProgress upgradeProgress)
+        public static bool CheckForUpgrade(UpgradeProgress upgradeProgress, bool forceCheck = false)
         {
             Log.Information("Start upgradeProgress:{upgradeProgress}", upgradeProgress);
             _readyToUpgrade = upgradeProgress.GetLastReadyToUpgrade();
@@ -41,30 +42,52 @@ namespace GithubReleaseUpgrader
                         Log.Information("Current verison:{currentVersion} new version:{githubReleaseVersion} no need to upgrade", currentVersion, githubReleaseVersion);
                         return;
                     }
+                    _ignoreVersion = upgradeProgress.GetIgnoreVersion();
+                    if (!forceCheck && _ignoreVersion?.Version != null && githubReleaseVersion == _ignoreVersion.Version)
+                    {
+                        Log.Information("Current verison:{currentVersion} new version:{githubReleaseVersion} _ignoreVersion:{_ignoreVersion} ignore this version", currentVersion, githubReleaseVersion, _ignoreVersion);
+                        return;
+                    }
                     var releaseLogMarkDown = await GetReleaseLog(upgradeProgress.GithubLastReleaseUrl);
                     var upgradeInfo = await GetUpgradeInfo(upgradeProgress.UpgradeInfoUrl);
                     if (upgradeInfo == null)
                     {
                         _readyToUpgrade = await upgradeProgress.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                        if (_readyToUpgrade?.NeedShutdown == true)
+                        {
+                            upgradeProgress.Shutdown();
+                        }
                         return;
                     }
                     if (upgradeInfo.SilentVersion != null && currentVersion < upgradeInfo.SilentVersion)
                     {
                         _readyToUpgrade = await upgradeProgress.SilentInternal(currentVersion, githubReleaseVersion);
                         Log.Information("Silent ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                        if (_readyToUpgrade?.NeedShutdown == true)
+                        {
+                            upgradeProgress.Shutdown();
+                        }
                         return;
                     }
                     if (upgradeInfo.ForceVersion != null && currentVersion < upgradeInfo.ForceVersion)
                     {
                         _readyToUpgrade = await upgradeProgress.ForceInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Force ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                        if (_readyToUpgrade?.NeedShutdown == true)
+                        {
+                            upgradeProgress.Shutdown();
+                        }
                         return;
                     }
                     if (upgradeInfo.NotifyVersion != null && currentVersion < upgradeInfo.NotifyVersion)
                     {
                         _readyToUpgrade = await upgradeProgress.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                        if (_readyToUpgrade?.NeedShutdown == true)
+                        {
+                            upgradeProgress.Shutdown();
+                        }
                         return;
                     }
                     if (upgradeInfo.TipVersion != null && currentVersion < upgradeInfo.TipVersion)
@@ -85,8 +108,8 @@ namespace GithubReleaseUpgrader
 
         public static void PerformUpgradeIfNeeded()
         {
-            Log.Information("PerformUpgradeIfNeeded readyToUpgrade:{readyToUpgrade}", _readyToUpgrade);
-            if (_readyToUpgrade == null)
+            Log.Information("PerformUpgradeIfNeeded readyToUpgrade:{readyToUpgrade} NeedRestart:{NeedRestart}", _readyToUpgrade, _readyToUpgrade?.NeedRestart);
+            if (_readyToUpgrade == null || !_readyToUpgrade.NeedRestart)
             {
                 return;
             }
@@ -104,6 +127,7 @@ namespace GithubReleaseUpgrader
                 }
             };
             process.Start();
+            _ignoreVersion?.Dispose();
         }
 
         private static Version GetCurrentVersion(string executablePath)

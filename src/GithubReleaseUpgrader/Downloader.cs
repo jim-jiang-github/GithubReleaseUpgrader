@@ -10,7 +10,7 @@ namespace GithubReleaseUpgrader
 {
     internal class Downloader
     {
-        public static async Task StartDonwload(string downloadFileUrl, string downloadFileSavePath, bool needExtract)
+        public static async Task<bool> StartDonwload(string downloadFileUrl, string downloadFileSavePath, bool needExtract)
         {
             try
             {
@@ -18,7 +18,7 @@ namespace GithubReleaseUpgrader
                 if (downloadFileDirectory == null)
                 {
                     Log.Warning("downloadFileDirectory is null");
-                    return;
+                    return false;
                 }
                 FileOperationsHelper.SafeCreateDirectory(downloadFileDirectory);
                 FileOperationsHelper.SafeDeleteFile(downloadFileSavePath);
@@ -35,10 +35,12 @@ namespace GithubReleaseUpgrader
                     ZipFile.ExtractToDirectory(downloadFileSavePath, downloadFileDirectory);
                     FileOperationsHelper.SafeDeleteFile(downloadFileSavePath);
                 }
+                return true;
             }
             catch (Exception ex)
             {
                 Log.Error("Download file error hanppened:{ex}", ex);
+                return false;
             }
         }
     }
