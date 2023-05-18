@@ -13,7 +13,6 @@ namespace GithubReleaseUpgrader
         public enum UpgradeOption
         {
             Cancel,
-            RemindAfter30Minutes,
             IgnoreCurrentVersion,
             ConfirmDownload
         }
@@ -48,8 +47,6 @@ namespace GithubReleaseUpgrader
             {
                 case UpgradeOption.Cancel:
                 default:
-                    return null;
-                case UpgradeOption.RemindAfter30Minutes:
                     return null;
                 case UpgradeOption.IgnoreCurrentVersion:
                     return null;
