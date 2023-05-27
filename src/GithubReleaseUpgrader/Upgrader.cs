@@ -84,6 +84,12 @@ namespace GithubReleaseUpgrader
                     {
                         _readyToUpgrade = await upgradeProgress.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                        if (_readyToUpgrade == null)
+                        {
+                            return;
+                        }
+                        _readyToUpgrade = await upgradeProgress.ForceInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                        Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
                         if (_readyToUpgrade?.NeedShutdown == true)
                         {
                             upgradeProgress.Shutdown();

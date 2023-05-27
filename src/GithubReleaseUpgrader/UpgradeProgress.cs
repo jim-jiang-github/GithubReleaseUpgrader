@@ -17,9 +17,9 @@ namespace GithubReleaseUpgrader
         }
         public class NotifyUpgradeHandle
         {
-            public bool NeedRestart { get; set; } = true;
-            public bool UpgradeNow { get; set; } = true;
-            public bool Ignore { get; set; } = true;
+            public bool NeedRestart { get; set; } = false;
+            public bool Ignore { get; set; } = false;
+            public bool Cancel { get; set; } = true;
         }
 
         private const string UPGRADE_SCRIPT_NAME = "upgrade.bat";
@@ -50,6 +50,10 @@ namespace GithubReleaseUpgrader
         {
             NotifyUpgradeHandle notifyUpgradeHandle = new NotifyUpgradeHandle();
             await Notify(currentVersion, newtVersion, releaseLogMarkDown, notifyUpgradeHandle);
+            if (notifyUpgradeHandle.Cancel)
+            {
+                return null;
+            }
             if (notifyUpgradeHandle.Ignore)
             {
                 var readyToUpgrade = PrepareForUpgrade(false, false);
@@ -63,7 +67,7 @@ namespace GithubReleaseUpgrader
                 {
                     return null;
                 }
-                var readyToUpgrade = PrepareForUpgrade(notifyUpgradeHandle.NeedRestart, notifyUpgradeHandle.UpgradeNow);
+                var readyToUpgrade = PrepareForUpgrade(notifyUpgradeHandle.NeedRestart, false);
                 return readyToUpgrade;
             }
         }
