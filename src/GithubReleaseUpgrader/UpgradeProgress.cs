@@ -17,7 +17,7 @@ namespace GithubReleaseUpgrader
         }
         public class NotifyUpgradeHandle
         {
-            public bool NeedRestart { get; set; } = false;
+            public bool Donwload { get; set; } = false;
             public bool Ignore { get; set; } = false;
             public bool Cancel { get; set; } = true;
         }
@@ -60,6 +60,11 @@ namespace GithubReleaseUpgrader
                 SaveIgnoreVersion(newtVersion);
                 return readyToUpgrade;
             }
+            else if (notifyUpgradeHandle.Donwload)
+            {
+                var readyToUpgrade = await ForceInternal(currentVersion, newtVersion, releaseLogMarkDown);
+                return readyToUpgrade;
+            }
             else
             {
                 var result = await PrepareForDownload();
@@ -67,7 +72,7 @@ namespace GithubReleaseUpgrader
                 {
                     return null;
                 }
-                var readyToUpgrade = PrepareForUpgrade(notifyUpgradeHandle.NeedRestart, false);
+                var readyToUpgrade = PrepareForUpgrade(false, false);
                 return readyToUpgrade;
             }
         }
