@@ -42,6 +42,26 @@ namespace GithubReleaseUpgrader
             }
         }
 
+        public static void SafeDeleteDirectory(string path)
+        {
+            try
+            {
+                SafeClearDirectory(path);
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path);
+                }
+            }
+            catch (IOException ioEx)
+            {
+                Log.Error("Directory not found, or path is a file:{ex}", ioEx.Message);
+            }
+            catch (UnauthorizedAccessException uaEx)
+            {
+                Log.Error("Permission error:{ex}", uaEx.Message);
+            }
+        }
+
         public static void SafeCreateDirectory(string path)
         {
             try

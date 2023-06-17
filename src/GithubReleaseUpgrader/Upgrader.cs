@@ -113,7 +113,17 @@ namespace GithubReleaseUpgrader
             {
                 return;
             }
-            string executablePath = Process.GetCurrentProcess().MainModule.FileName;
+            if (_readyToUpgrade.OriginalFolder == null)
+            {
+                Log.Warning("_readyToUpgrade.OriginalFolder == null");
+                return;
+            }
+            string? executablePath = Process.GetCurrentProcess()?.MainModule?.FileName;
+            if (executablePath == null)
+            {
+                Log.Warning("executablePath == null");
+                return;
+            }
             var process = new Process()
             {
                 StartInfo = new ProcessStartInfo
@@ -126,7 +136,15 @@ namespace GithubReleaseUpgrader
                     CreateNoWindow = true
                 }
             };
-            process.Start();
+            try
+            {
+                process.Start();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.ToString());
+                FileOperationsHelper.SafeDeleteDirectory(_readyToUpgrade.OriginalFolder);
+            }
             _ignoreVersion?.Dispose();
         }
 
