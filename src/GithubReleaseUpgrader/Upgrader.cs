@@ -17,21 +17,21 @@ namespace GithubReleaseUpgrader
         private static ReadyToUpgrade? _readyToUpgrade;
         private static IgnoreVersion? _ignoreVersion;
 
-        public static bool CheckForUpgrade(UpgradeProgress upgradeProgress, bool forceCheck = false)
+        public static bool CheckForUpgrade(UpgradeHandler upgradeHandler, bool forceCheck = false)
         {
-            Log.Information("Start upgradeProgress:{upgradeProgress}", upgradeProgress);
-            _readyToUpgrade = upgradeProgress.GetLastReadyToUpgrade();
+            Log.Information("Start upgradeHandler:{upgradeHandler}", upgradeHandler);
+            _readyToUpgrade = upgradeHandler.GetLastReadyToUpgrade();
             if (_readyToUpgrade != null)
             {
-                Log.Information("Start _readyToUpgrade:{_readyToUpgrade} is not null", upgradeProgress);
+                Log.Information("Start _readyToUpgrade:{_readyToUpgrade} is not null", upgradeHandler);
                 return true;
             }
             Task.Run(async () =>
             {
                 try
                 {
-                    Version currentVersion = GetCurrentVersion(upgradeProgress.ExecutablePath);
-                    Version? githubReleaseVersion = await GetLastReleaseVersion(upgradeProgress.GithubLastReleaseUrl);
+                    Version currentVersion = GetCurrentVersion(upgradeHandler.ExecutablePath);
+                    Version? githubReleaseVersion = await GetLastReleaseVersion(upgradeHandler.GithubLastReleaseUrl);
                     if (githubReleaseVersion == null)
                     {
                         Log.Information("Can not get githubReleaseVersion");
@@ -42,57 +42,57 @@ namespace GithubReleaseUpgrader
                         Log.Information("Current verison:{currentVersion} new version:{githubReleaseVersion} no need to upgrade", currentVersion, githubReleaseVersion);
                         return;
                     }
-                    _ignoreVersion = upgradeProgress.GetIgnoreVersion();
+                    _ignoreVersion = upgradeHandler.GetIgnoreVersion();
                     if (!forceCheck && _ignoreVersion?.Version != null && githubReleaseVersion == _ignoreVersion.Version)
                     {
                         Log.Information("Current verison:{currentVersion} new version:{githubReleaseVersion} _ignoreVersion:{_ignoreVersion} ignore this version", currentVersion, githubReleaseVersion, _ignoreVersion);
                         return;
                     }
-                    var releaseLogMarkDown = await GetReleaseLog(upgradeProgress.GithubLastReleaseUrl);
-                    var upgradeInfo = await GetUpgradeInfo(upgradeProgress.UpgradeInfoUrl);
+                    var releaseLogMarkDown = await GetReleaseLog(upgradeHandler.GithubLastReleaseUrl);
+                    var upgradeInfo = await GetUpgradeInfo(upgradeHandler.UpgradeInfoUrl);
                     if (upgradeInfo == null)
                     {
-                        _readyToUpgrade = await upgradeProgress.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                        _readyToUpgrade = await upgradeHandler.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
                         if (_readyToUpgrade?.NeedShutdown == true)
                         {
-                            upgradeProgress.Shutdown();
+                            upgradeHandler.Shutdown();
                         }
                         return;
                     }
                     if (upgradeInfo.SilentVersion != null && currentVersion < upgradeInfo.SilentVersion)
                     {
-                        _readyToUpgrade = await upgradeProgress.SilentInternal(currentVersion, githubReleaseVersion);
+                        _readyToUpgrade = await upgradeHandler.SilentInternal(currentVersion, githubReleaseVersion);
                         Log.Information("Silent ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
                         if (_readyToUpgrade?.NeedShutdown == true)
                         {
-                            upgradeProgress.Shutdown();
+                            upgradeHandler.Shutdown();
                         }
                         return;
                     }
                     if (upgradeInfo.ForceVersion != null && currentVersion < upgradeInfo.ForceVersion)
                     {
-                        _readyToUpgrade = await upgradeProgress.ForceInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                        _readyToUpgrade = await upgradeHandler.ForceInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Force ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
                         if (_readyToUpgrade?.NeedShutdown == true)
                         {
-                            upgradeProgress.Shutdown();
+                            upgradeHandler.Shutdown();
                         }
                         return;
                     }
                     if (upgradeInfo.NotifyVersion != null && currentVersion < upgradeInfo.NotifyVersion)
                     {
-                        _readyToUpgrade = await upgradeProgress.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                        _readyToUpgrade = await upgradeHandler.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
                         if (_readyToUpgrade?.NeedShutdown == true)
                         {
-                            upgradeProgress.Shutdown();
+                            upgradeHandler.Shutdown();
                         }
                         return;
                     }
                     if (upgradeInfo.TipVersion != null && currentVersion < upgradeInfo.TipVersion)
                     {
-                        upgradeProgress.TipInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                        upgradeHandler.TipInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Tip");
                         return;
                     }

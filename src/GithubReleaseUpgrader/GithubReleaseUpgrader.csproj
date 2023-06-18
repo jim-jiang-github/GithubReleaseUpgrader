@@ -8,14 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="upgrader.bat" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="upgrader.bat" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
     <PackageReference Include="ReverseMarkdown" Version="3.24.0" />
     <PackageReference Include="Serilog" Version="2.12.0" />

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace GithubReleaseUpgrader
 {
-    public abstract class UpgradeProgress
+    public abstract class UpgradeHandler
     {
         public class ForceUpgradeHandle
         {
@@ -22,8 +22,7 @@ namespace GithubReleaseUpgrader
             public bool Cancel { get; set; } = true;
         }
 
-        private const string UPGRADE_SCRIPT_NAME = "upgrade.bat";
-        private string UpgradeScriptPath => Path.Combine(UpgradeTempFolder, UPGRADE_SCRIPT_NAME);
+        private string UpgradeScriptPath => Path.Combine(UpgradeTempFolder, UpgradeScriptName);
         private string UpgradeResourceFolder => Path.Combine(UpgradeTempFolder, "upgrades");
         internal string GithubLastReleaseUrl => $"{GithubUrl}/releases/latest";
         internal string UpgradeResourceUrl => $"{GithubUrl}/releases/latest/download/{UpgradeResourceName}";
@@ -32,6 +31,7 @@ namespace GithubReleaseUpgrader
         internal string ExecutablePath => Path.Combine(ExecutableFolder, ExecutableName);
 
         public abstract string UpgradeTempFolder { get; }
+        public abstract string UpgradeScriptName { get; }
         public abstract string GithubUrl { get; }
         public abstract string UpgradeResourceName { get; }
         public abstract string UpgradeInfoName { get; }
@@ -120,19 +120,7 @@ namespace GithubReleaseUpgrader
             return readyToUpgrade;
         }
 
-        private string? GetUpgradeScriptContent()
-        {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            using Stream? stream = assembly.GetManifestResourceStream($"GithubReleaseUpgrader.upgrader.bat");
-            if (stream == null)
-            {
-                Log.Warning("Can not found upgrader");
-                return null;
-            }
-            using StreamReader reader = new StreamReader(stream);
-            string content = reader.ReadToEnd();
-            return content;
-        }
+        protected abstract string? GetUpgradeScriptContent();
 
         private async Task<bool> PrepareForDownload()
         {
