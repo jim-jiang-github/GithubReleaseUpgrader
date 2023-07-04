@@ -29,7 +29,7 @@ namespace GithubReleaseUpgrader
         internal string UpgradeInfoUrl => $"{GithubUrl}/releases/latest/download/{UpgradeInfoName}";
         internal string ExecutableFolder { get; } = AppDomain.CurrentDomain.BaseDirectory;
         internal string ExecutablePath => Path.Combine(ExecutableFolder, ExecutableName);
-
+        public abstract Version CurrentVersion { get; }
         public abstract string UpgradeTempFolder { get; }
         public abstract string UpgradeScriptName { get; }
         public abstract string GithubUrl { get; }

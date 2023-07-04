@@ -30,7 +30,7 @@ namespace GithubReleaseUpgrader
             {
                 try
                 {
-                    Version currentVersion = GetCurrentVersion(upgradeHandler.ExecutablePath);
+                    Version currentVersion = upgradeHandler.CurrentVersion;
                     Version? githubReleaseVersion = await GetLastReleaseVersion(upgradeHandler.GithubLastReleaseUrl);
                     if (githubReleaseVersion == null)
                     {
@@ -146,16 +146,6 @@ namespace GithubReleaseUpgrader
                 FileOperationsHelper.SafeDeleteDirectory(_readyToUpgrade.OriginalFolder);
             }
             _ignoreVersion?.Dispose();
-        }
-
-        private static Version GetCurrentVersion(string executablePath)
-        {
-            FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(executablePath);
-            string versionStr = fileVersionInfo.FileVersion ?? "Unknow";
-            var result = Version.TryParse(versionStr, out Version? version);
-            var resultVersion = version == null ? Version.Parse("0.0.0.0") : new Version(version.Major, version.Minor, version.Build);
-            Log.Information("Executable version FileVersion:{fileVersionInfo.FileVersion} version:{version} resultVersion:{resultVersion}", fileVersionInfo.FileVersion, version, resultVersion);
-            return resultVersion;
         }
 
         private static async Task<UpgradeInfo?> GetUpgradeInfo(string upgradeInfoUrl)
