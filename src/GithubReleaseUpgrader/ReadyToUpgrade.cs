@@ -34,7 +34,7 @@ namespace GithubReleaseUpgrader
         public void DoUpgrade()
         {
             Log.Information("PerformUpgradeIfNeeded readyToUpgrade:{readyToUpgrade} NeedRestart:{NeedRestart}", this, NeedRestart);
-            if (NeedRestart)
+            if (!NeedRestart)
             {
                 return;
             }
