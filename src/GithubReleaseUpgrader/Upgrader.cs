@@ -31,6 +31,7 @@ namespace GithubReleaseUpgrader
                 try
                 {
                     Version currentVersion = upgradeHandler.CurrentVersion;
+                    Log.Information("currentVersion:{currentVersion}", currentVersion);
                     Version? githubReleaseVersion = await GetLastReleaseVersion(upgradeHandler.GithubLastReleaseUrl);
                     if (githubReleaseVersion == null)
                     {
@@ -60,16 +61,16 @@ namespace GithubReleaseUpgrader
                         }
                         return;
                     }
-                    if (upgradeInfo.SilentVersion != null && currentVersion < upgradeInfo.SilentVersion)
-                    {
-                        _readyToUpgrade = await upgradeHandler.SilentInternal(currentVersion, githubReleaseVersion);
-                        Log.Information("Silent ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
-                        if (_readyToUpgrade?.NeedShutdown == true)
-                        {
-                            upgradeHandler.Shutdown();
-                        }
-                        return;
-                    }
+                    //if (upgradeInfo.SilentVersion != null && currentVersion < upgradeInfo.SilentVersion)
+                    //{
+                    //    _readyToUpgrade = await upgradeHandler.SilentInternal(currentVersion, githubReleaseVersion);
+                    //    Log.Information("Silent ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
+                    //    if (_readyToUpgrade?.NeedShutdown == true)
+                    //    {
+                    //        upgradeHandler.Shutdown();
+                    //    }
+                    //    return;
+                    //}
                     if (upgradeInfo.ForceVersion != null && currentVersion < upgradeInfo.ForceVersion)
                     {
                         _readyToUpgrade = await upgradeHandler.ForceInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
@@ -80,7 +81,7 @@ namespace GithubReleaseUpgrader
                         }
                         return;
                     }
-                    if (upgradeInfo.NotifyVersion != null && currentVersion < upgradeInfo.NotifyVersion)
+                    //if (upgradeInfo.NotifyVersion != null && currentVersion < upgradeInfo.NotifyVersion)
                     {
                         _readyToUpgrade = await upgradeHandler.NotifyInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
                         Log.Information("Notify ready to upgrade:{readyToUpgrade}", _readyToUpgrade);
@@ -90,12 +91,12 @@ namespace GithubReleaseUpgrader
                         }
                         return;
                     }
-                    if (upgradeInfo.TipVersion != null && currentVersion < upgradeInfo.TipVersion)
-                    {
-                        upgradeHandler.TipInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
-                        Log.Information("Tip");
-                        return;
-                    }
+                    //if (upgradeInfo.TipVersion != null && currentVersion < upgradeInfo.TipVersion)
+                    //{
+                    //    upgradeHandler.TipInternal(currentVersion, githubReleaseVersion, releaseLogMarkDown);
+                    //    Log.Information("Tip");
+                    //    return;
+                    //}
                 }
                 catch (Exception ex)
                 {
