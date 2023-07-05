@@ -27,7 +27,6 @@ namespace GithubReleaseUpgrader
         internal string GithubLastReleaseUrl => $"{GithubUrl}/releases/latest";
         internal string UpgradeResourceUrl => $"{GithubUrl}/releases/latest/download/{UpgradeResourceName}";
         internal string UpgradeInfoUrl => $"{GithubUrl}/releases/latest/download/{UpgradeInfoName}";
-        internal string ExecutableFolder { get; } = AppDomain.CurrentDomain.BaseDirectory;
         internal string ExecutablePath => Path.Combine(ExecutableFolder, ExecutableName);
         public abstract Version CurrentVersion { get; }
         public abstract string UpgradeTempFolder { get; }
@@ -35,6 +34,7 @@ namespace GithubReleaseUpgrader
         public abstract string GithubUrl { get; }
         public abstract string UpgradeResourceName { get; }
         public abstract string UpgradeInfoName { get; }
+        public abstract string ExecutableFolder { get; }
         public abstract string ExecutableName { get; }
 
         public abstract void Tip(Version currentVersion, Version newtVersion, string? releaseLogMarkDown);
@@ -111,11 +111,12 @@ namespace GithubReleaseUpgrader
                 Log.Warning("UpgradeResourceFolder no exist");
                 return null;
             }
-            ReadyToUpgrade readyToUpgrade = new ReadyToUpgrade()
+            ReadyToUpgrade readyToUpgrade = new ReadyToUpgrade(this)
             {
                 UpgradeScriptPath = UpgradeScriptPath,
                 OriginalFolder = UpgradeResourceFolder,
-                TargetFolder = ExecutableFolder
+                TargetFolder = ExecutableFolder,
+                ExecutablePath = ExecutablePath
             };
             return readyToUpgrade;
         }
@@ -138,11 +139,12 @@ namespace GithubReleaseUpgrader
 
         private ReadyToUpgrade PrepareForUpgrade(bool needRestart = true, bool needShutdown = true)
         {
-            ReadyToUpgrade readyToUpgrade = new ReadyToUpgrade()
+            ReadyToUpgrade readyToUpgrade = new ReadyToUpgrade(this)
             {
                 UpgradeScriptPath = UpgradeScriptPath,
                 OriginalFolder = UpgradeResourceFolder,
                 TargetFolder = ExecutableFolder,
+                ExecutablePath = ExecutablePath,
                 NeedRestart = needRestart,
                 NeedShutdown = needShutdown
             };
@@ -164,6 +166,8 @@ namespace GithubReleaseUpgrader
             FileOperationsHelper.SafeCreateDirectory(UpgradeTempFolder);
             ignoreVersion.SaveAsJson(UpgradeTempFolder);
         }
+
+        public abstract void DoUpgrade(string upgradeScriptPath, string originalFolder, string targetFolder, string executablePath, bool needRestart);
 
         public override string ToString()
         {

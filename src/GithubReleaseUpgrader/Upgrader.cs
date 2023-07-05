@@ -108,43 +108,12 @@ namespace GithubReleaseUpgrader
 
         public static void PerformUpgradeIfNeeded()
         {
-            Log.Information("PerformUpgradeIfNeeded readyToUpgrade:{readyToUpgrade} NeedRestart:{NeedRestart}", _readyToUpgrade, _readyToUpgrade?.NeedRestart);
-            if (_readyToUpgrade == null || !_readyToUpgrade.NeedRestart)
+            Log.Information("PerformUpgradeIfNeeded readyToUpgrade:{readyToUpgrade}", _readyToUpgrade);
+            if (_readyToUpgrade == null)
             {
                 return;
             }
-            if (_readyToUpgrade.OriginalFolder == null)
-            {
-                Log.Warning("_readyToUpgrade.OriginalFolder == null");
-                return;
-            }
-            string? executablePath = Process.GetCurrentProcess()?.MainModule?.FileName;
-            if (executablePath == null)
-            {
-                Log.Warning("executablePath == null");
-                return;
-            }
-            var process = new Process()
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = _readyToUpgrade.UpgradeScriptPath,
-                    Arguments = $"{_readyToUpgrade.OriginalFolder} {_readyToUpgrade.TargetFolder} {executablePath} {_readyToUpgrade.NeedRestart}",
-                    RedirectStandardOutput = false,
-                    RedirectStandardError = false,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-            try
-            {
-                process.Start();
-            }
-            catch (Exception ex)
-            {
-                Log.Error(ex.ToString());
-                FileOperationsHelper.SafeDeleteDirectory(_readyToUpgrade.OriginalFolder);
-            }
+            _readyToUpgrade.DoUpgrade();
             _ignoreVersion?.Dispose();
         }
 
